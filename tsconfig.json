@@ -1,7 +1,6 @@
 {
 	"compilerOptions": {
-		"moduleResolution": "Node",
-        "baseUrl": "."
+		"moduleResolution": "Node"
 	},
 	"allowTsInNodeModules": true
 }
