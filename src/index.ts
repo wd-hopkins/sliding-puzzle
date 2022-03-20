@@ -4,16 +4,50 @@ import * as a1lib from '@alt1/base';
 require("!file-loader?name=[name].[ext]!./index.html");
 require("!file-loader?name=[name].[ext]!./appconfig.json");
 
-// Loads all images as raw pixel data async, images have to be saved as *.data.png
-// This also takes care of srgb header bullshit
-// This is async, so can't be accessed instantly, but generally takes <20ms
+const SPACING = 20;
+const TILE_SIZE = 40;
+const BORDER_WIDTH = 17;
+
 const imgs = a1lib.ImageDetect.webpackImages({
-	homeport: require("./homebutton.data.png")
+	homeport: require("./homebutton.data.png"),
+	elves: require("../assets/Elves\ puzzle\ solved.data.png")
 });
 
+document.addEventListener("DOMContentLoaded", run);
+
+function tiles(full_board: ImageData): Array<Array<ImageData>> {
+	var tiles = [...Array(5)].map(e => Array(5));
+	for (let i = 0; i < 5; i++) {
+		let x = BORDER_WIDTH + i * TILE_SIZE + i * SPACING;
+		for (let j = 0; j < 5; j++) {
+			let y = BORDER_WIDTH + j * TILE_SIZE + j * SPACING;
+			var slice: ImageData = new ImageData(TILE_SIZE, TILE_SIZE);
+			full_board.copyTo(slice, x, y, TILE_SIZE, TILE_SIZE, 0, 0);
+			tiles[i][j] = slice;
+		}
+	}
+	return tiles;
+}
+
+function run() {
+	imgs.promise.then(() => {
+		var tiles_arr = tiles(imgs.elves);
+		document.getElementById("visual-result").innerHTML = '';
+		for (let i = 0; i < 5; i++) {
+			for (let j = 0; j < 5; j++) {
+				document.getElementById("visual-result").append(tiles_arr[i][j].show());				
+			}
+		}
+	});
+}
+
 a1lib.PasteInput.listen(ref => {
-	const loc = ref.findSubimage(imgs.homeport);
-	document.getElementById("result").innerText = "Found result: " + JSON.stringify(loc);
+	// Calculate positions of tiles
+	// 2*14 + 5*49 + 4*8
+	var found_tiles = tiles(imgs.elves).map(row => row.map(tile => ref.findSubimage(tile)));
+	console.log(found_tiles);
+	
+	// found_tiles.forEach(row => row.forEach(v => console.log(v)));
 });
 
 // You can reach exports on window.TEST because of
@@ -34,7 +68,7 @@ export function capture() {
 	document.getElementById("visual-result").append(buf.show());
 }
 
-a1lib.on('alt1pressed', () => capture());
+// a1lib.on('alt1pressed', () => capture());
 
 if (window.alt1) {
 	// Tell alt1 about the app (this makes alt1 show the add app button when running inside the embedded browser)
